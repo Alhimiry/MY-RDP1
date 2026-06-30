@@ -1,1 +1,17 @@
-name: RDP on workflow dispatch on: workflow_dispatch: jobs: secure-rdp: runs-on: windows-latest timeout-minutes: 360 steps: - name: Enable RDP run: | Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0 Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Value 0 Enable-NetFirewallRule -DisplayGroup "Remote Desktop" - name: Create User run: | $password = -join ((65..90 + 97..122 + 48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_}) $secure = ConvertTo-SecureString $password -AsPlainText -Force New-LocalUser -Name "RDP" -Password $secure -AccountNeverExpires Add-LocalGroupMember -Group "Administrators" -Member "RDP" echo "RDP_USER=RDP" >> $env:GITHUB_ENV echo "RDP_PASS=$password" >> $env:GITHUB_ENV - name: Install Tailscale run: | $url = "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" $file = "$env:TEMP\tailscale.msi" Invoke-WebRequest $url -OutFile $file Start-Process msiexec.exe -ArgumentList "/i $file /quiet /norestart" -Wait - name: Connect Tailscale run: | & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="gh-rdp-$env:GITHUB_RUN_ID" Start-Sleep 10 $ip = (& "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4).Trim() echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV - name: Show Access Info run: | Write-Host "RDP IP: $env:TAILSCALE_IP" Write-Host "User: RDP" Write-Host "Pass: $env:RDP_PASS" - name: Keep Alive run: | while ($true) { Start-Sleep 300 }
+- name: Create User
+  shell: powershell
+  run: |
+    $password = "Rdp@$(Get-Random -Minimum 100000 -Maximum 999999)!Aa"
+
+    $secure = ConvertTo-SecureString $password -AsPlainText -Force
+
+    New-LocalUser `
+      -Name "RDP" `
+      -Password $secure `
+      -AccountNeverExpires `
+      -PasswordNeverExpires
+
+    Add-LocalGroupMember -Group "Administrators" -Member "RDP"
+
+    echo "RDP_USER=RDP" >> $env:GITHUB_ENV
+    echo "RDP_PASS=$password" >> $env:GITHUB_ENV
