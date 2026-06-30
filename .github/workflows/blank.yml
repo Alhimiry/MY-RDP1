@@ -1,28 +1,12 @@
-name: Windows Workflow Clean (Node 24 Ready)
+# تفعيل Remote Desktop
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
 
-on:
-  workflow_dispatch:
+# فتح الجدار الناري
+Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-jobs:
-  test:
-    runs-on: windows-latest
+# إنشاء مستخدم RDP
+net user RDP "Rdp@2026Secure123" /add
+net localgroup administrators RDP /add
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Show System Info
-        shell: powershell
-        run: |
-          Write-Host "Workflow running on Windows Runner"
-          node -v
-          npm -v
-          Get-ComputerInfo
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+# منع انتهاء كلمة المرور
+wmic useraccount where name='RDP' set PasswordExpires=FALSE
