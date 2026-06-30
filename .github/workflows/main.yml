@@ -1,10 +1,10 @@
-name: RDP on workflow_dispatch
+name: Windows RDP via Tailscale
 
 on:
   workflow_dispatch:
 
 jobs:
-  secure-rdp:
+  rdp:
     runs-on: windows-latest
     timeout-minutes: 360
 
@@ -19,7 +19,7 @@ jobs:
       - name: Create User
         shell: powershell
         run: |
-          $password = "Rdp@$(Get-Random -Minimum 100000 -Maximum 999999)!Aa"
+          $password = "Rdp@2026Aa12345!"
           $secure = ConvertTo-SecureString $password -AsPlainText -Force
 
           New-LocalUser -Name "RDP" -Password $secure -AccountNeverExpires -PasswordNeverExpires
@@ -47,9 +47,12 @@ jobs:
       - name: Show Access Info
         shell: powershell
         run: |
-          Write-Host "RDP IP: $env:TAILSCALE_IP"
+          Write-Host "================================="
+          Write-Host "RDP READY"
           Write-Host "User: RDP"
-          Write-Host "Pass: $env:RDP_PASS"
+          Write-Host "Password: $env:RDP_PASS"
+          Write-Host "Tailscale IP: $env:TAILSCALE_IP"
+          Write-Host "================================="
 
       - name: Keep Alive
         shell: powershell
